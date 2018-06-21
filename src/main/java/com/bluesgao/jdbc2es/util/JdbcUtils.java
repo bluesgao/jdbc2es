@@ -30,10 +30,14 @@ public class JdbcUtils {
 
     static {
         dataSourceMap = new ConcurrentHashMap<>();
-        String key = "";
-        DataSource dataSource = createDataSource(null);
-        if (dataSource != null && !dataSourceMap.containsKey(key)) {
-            dataSourceMap.put(key, dataSource);
+        //获取datasorce config，循环创建datasource
+        List<DataSourceConfig> configs = getDataSourceConifgs();
+        for (DataSourceConfig config : configs) {
+            String key = "";
+            DataSource dataSource = createDataSource(null);
+            if (dataSource != null && !dataSourceMap.containsKey(key)) {
+                dataSourceMap.put(key, dataSource);
+            }
         }
     }
 
@@ -65,9 +69,14 @@ public class JdbcUtils {
      * @Auther: gaoxin11
      * @Date: 2018/6/21 14:22
      **/
-    public Connection getConnection(String key) {
+    public static Connection getConnection(String key) {
         log.info("获取数据库连接");
+        if (!dataSourceMap.containsKey(key)) {
+            return null;
+        }
+
         Connection connection = null;
+
         try {
             connection = dataSourceMap.get(key).getConnection();
         } catch (SQLException e) {
@@ -84,13 +93,14 @@ public class JdbcUtils {
      * @Auther: gaoxin11
      * @Date: 2018/6/21 14:23
      **/
-    public List<Map<String, Object>> query(Connection connection, String sql, Object... params) {
+    public static List<Map<String, Object>> query(String key, String sql, Object... params) {
         log.info("执行查询：sql:{}; params:{}", sql.toString(), params.toString());
         PreparedStatement pst = null;
         ResultSet rs = null;
+        Connection connection = null;
         try {
             //获得连接
-            //connection = getConnection();
+            connection = getConnection(key);
             //获得preparedSttement对象进行预编译（？占位符）
             pst = connection.prepareStatement(sql);
             int paramsIndex = 1;
@@ -133,7 +143,7 @@ public class JdbcUtils {
      * @Auther: gaoxin11
      * @Date: 2018/6/21 14:23
      **/
-    public void close(Connection connection, PreparedStatement preparedStatement, ResultSet resultSet) {
+    public static void close(Connection connection, PreparedStatement preparedStatement, ResultSet resultSet) {
         log.info("关闭jdbc资源");
         // 关闭结果集对象
         if (resultSet != null) {
@@ -161,5 +171,9 @@ public class JdbcUtils {
                 log.error("关闭Connection对象错误：{}", e.getMessage());
             }
         }
+    }
+
+    public static List<DataSourceConfig> getDataSourceConifgs() {
+        return null;
     }
 }
